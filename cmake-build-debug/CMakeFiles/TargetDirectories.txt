@@ -1,3 +1,0 @@
-/mnt/SSD1TO/Project/ShaderCrossCompiler/cmake-build-debug/CMakeFiles/ShaderCrossCompiler.dir
-/mnt/SSD1TO/Project/ShaderCrossCompiler/cmake-build-debug/CMakeFiles/edit_cache.dir
-/mnt/SSD1TO/Project/ShaderCrossCompiler/cmake-build-debug/CMakeFiles/rebuild_cache.dir
