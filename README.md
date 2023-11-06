@@ -1,2 +1,2 @@
 # ShaderCrossCompiler
-Tool to cross compile HLSL
+Tool to cross compile GLSL
