@@ -9,14 +9,19 @@ int main(int argc, char** argv) {
     options.add_options()
             ("h,help", "Print usage.")
             ("i,input", "Input shader path", cxxopts::value<std::string>())
-            ("o,output", "Input shader path", cxxopts::value<std::string>())
+            ("o,output", "Output shader directory", cxxopts::value<std::string>())
             ("fragment", "Compile input as a fragment shader")
             ("vertex", "Compile input as a vertex shader")
             ("geometry", "Compile input as a geometry shader")
             ("control", "Compile input as a tesselation control shader")
             ("eval", "Compile input as a tesselation evaluation shader")
             ("compute", "Compile input as a compute shader")
-            ("optimize", "Enable spirv optimizer");
+            ("optimize", "Enable glslang optimizer")
+            ("glsl", "Only output opengl shader")
+            ("spirv", "Only output vulkan shader")
+            ("hlsl", "Only output directx shader")
+            ("msl", "Only output metal shader")
+            ("all", "Output all shader format (shortcut)");
 
     cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -27,12 +32,12 @@ int main(int argc, char** argv) {
 
     if (!result.count("input")) {
         std::cout << "Missing shader file.\n\n" << options.help() << std::endl;
-        return 0;
+        return -1;
     }
 
     if (!result.count("output")) {
         std::cout << "Missing output.\n\n" << options.help() << std::endl;
-        return 0;
+        return -1;
     }
 
     std::filesystem::path shaderInputPath{ result["input"].as<std::string>() };
@@ -40,8 +45,15 @@ int main(int argc, char** argv) {
 
     if (!std::filesystem::exists(shaderInputPath)) {
         std::cout << "Provided file doesn't exists." << std::endl;
-        return 0;
+        return -1;
     }
+
+    if (!std::filesystem::is_directory(shaderOutputPath)) {
+        std::cout << "Output must be a directory, not a folder." << std::endl;
+        return -1;
+    }
+
+    std::filesystem::path fileName{ shaderInputPath.filename() };
 
     std::ifstream inputFile{ shaderInputPath, std::ios_base::binary };
     if (!inputFile.is_open()) {
@@ -60,7 +72,7 @@ int main(int argc, char** argv) {
     inputFile.close();
     data[size] = 0;
 
-    ShaderCC::ShaderType shaderType{};
+    ShaderCC::ShaderType shaderType{ ShaderCC::ShaderType::None };
 
     if (result.count("fragment"))
         shaderType = ShaderCC::ShaderType::Fragment;
@@ -75,6 +87,11 @@ int main(int argc, char** argv) {
     if (result.count("compute"))
         shaderType = ShaderCC::ShaderType::Compute;
 
+    if (shaderType == ShaderCC::ShaderType::None) {
+        std::cout << "Shader type is missing." << options.help() << std::endl;
+        return 0;
+    }
+
     ShaderCC::Shader shader{ shaderType };
 
     if (result.count("optimize"))
@@ -85,9 +102,39 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    const std::vector<char>& spirvSource{ shader.GetSpirVSource() };
+    bool all = result.count("all");
 
-    std::ofstream outputFile{ shaderOutputPath, std::ios_base::binary };
-    outputFile.write(spirvSource.data(), spirvSource.size());
-    outputFile.close();
+    if (all || result.count("glsl")) {
+        const std::vector<char>& glslSource{ shader.GetGlslSource() };
+        std::filesystem::path glslFilePath{ shaderOutputPath / fileName.replace_extension(".glsl") };
+
+        std::ofstream outputFile{ glslFilePath, std::ios_base::binary };
+        outputFile.write(glslSource.data(), glslSource.size());
+        outputFile.close();
+
+    }
+    if (all || result.count("spirv")) {
+        const std::vector<char>& spirvSource{ shader.GetSpirVSource() };
+        std::filesystem::path spirvFilePath{ shaderOutputPath / fileName.replace_extension(".spirv") };
+
+        std::ofstream outputFile{ spirvFilePath, std::ios_base::binary };
+        outputFile.write(spirvSource.data(), spirvSource.size());
+        outputFile.close();
+    }
+    if (all || result.count("hlsl")) {
+        const std::vector<char>& hlslSource{ shader.GetHlslSource() };
+        std::filesystem::path hlslFilePath{ shaderOutputPath / fileName.replace_extension(".hlsl") };
+
+        std::ofstream outputFile{ hlslFilePath, std::ios_base::binary };
+        outputFile.write(hlslSource.data(), hlslSource.size());
+        outputFile.close();
+    }
+    if (all || result.count("msl")) {
+        const std::vector<char>& mslSource{ shader.GetMslSource() };
+        std::filesystem::path mslFilePath{ shaderOutputPath / fileName.replace_extension(".msl") };
+
+        std::ofstream outputFile{ mslFilePath, std::ios_base::binary };
+        outputFile.write(mslSource.data(), mslSource.size());
+        outputFile.close();
+    }
 }

@@ -6,6 +6,7 @@
 
 namespace ShaderCC {
     enum class ShaderType {
+        None,
         Vertex,
         Fragment,
         Geometry,
@@ -21,15 +22,21 @@ namespace ShaderCC {
 
         bool Compile(const std::vector<char>& glsl);
 
-        //const std::vector<char>& GetGlslSource();
+        const std::vector<char>& GetGlslSource();
         const std::vector<char>& GetSpirVSource();
-        //const std::vector<char>& GetMslSource();
-        //const std::vector<char>& GetHlslSource();
+        const std::vector<char>& GetMslSource();
+        const std::vector<char>& GetHlslSource();
 
         void SetOptimizer();
     private:
+        bool CompileGLSL(std::vector<unsigned int>& spirv);
+        bool CompileHLSL(std::vector<unsigned int>& spirv);
+        bool CompileMSL(std::vector<unsigned int>& spirv);
+
+    private:
         ShaderType type{};
         bool optimize{ false };
+        unsigned int glslVersion{ 100 };
         std::vector<char> glslSource{};
         std::vector<char> spirvSource{};
         std::vector<char> mslSource{};
