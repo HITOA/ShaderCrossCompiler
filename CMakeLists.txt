@@ -10,7 +10,8 @@ add_subdirectory(3rdparty/SPIRV-Cross)
 add_library(ShaderCrossCompilerLib library/tokenizer.h
         library/tokenizer.cpp
         library/shadercrosscompiler.h
-        library/shadercrosscompiler.cpp)
+        library/shadercrosscompiler.cpp
+        library/aggregateshader.h)
 target_link_libraries(ShaderCrossCompilerLib glslang glslang-default-resource-limits SPIRV spirv-cross-glsl spirv-cross-hlsl spirv-cross-msl)
 target_include_directories(ShaderCrossCompilerLib PUBLIC library)
 

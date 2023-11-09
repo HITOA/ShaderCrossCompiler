@@ -4,6 +4,9 @@
 #include <fstream>
 #include <shadercrosscompiler.h>
 
+#define SHADERCC_IMPL_AGGREGATE_WRITE
+#include <aggregateshader.h>
+
 int main(int argc, char** argv) {
     cxxopts::Options options{"ShaderCrossCompiler", "GLSL Shader Cross Compiler"};
     options.add_options()
@@ -21,7 +24,8 @@ int main(int argc, char** argv) {
             ("spirv", "Only output vulkan shader")
             ("hlsl", "Only output directx shader")
             ("msl", "Only output metal shader")
-            ("all", "Output all shader format (shortcut)");
+            ("all", "Output all shader format (shortcut)")
+            ("aggregate", "Output all shader format in one file");
 
     cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -135,6 +139,13 @@ int main(int argc, char** argv) {
 
         std::ofstream outputFile{ mslFilePath, std::ios_base::binary };
         outputFile.write(mslSource.data(), mslSource.size());
+        outputFile.close();
+    }
+
+    if (result.count("aggregate")) {
+        std::filesystem::path aggregateFilePath{ shaderOutputPath / fileName.replace_extension(".shader") };
+        std::ofstream outputFile{ aggregateFilePath, std::ios_base::binary };
+        ShaderCC::WriteAggregateShader(outputFile, shader);
         outputFile.close();
     }
 }

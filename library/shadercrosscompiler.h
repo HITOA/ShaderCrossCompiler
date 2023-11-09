@@ -42,9 +42,6 @@ namespace ShaderCC {
         std::vector<char> mslSource{};
         std::vector<char> hlslSource{};
     };
-
-    //void CompileProgram(char* data, size_t size);
-    //void CompileShader(char* data, size_t size, ShaderType type);
 }
 
 #endif //SHADERCROSSCOMPILER_SHADERCROSSCOMPILER_H
