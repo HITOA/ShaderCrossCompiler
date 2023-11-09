@@ -4,6 +4,9 @@ Tool to cross compile Vulkan GLSL (WIP).
 
 ShaderCrossCompiler simply glues 3rdparty library (glslang and spirv-cross) together.
 
+ShaderCrossCompiler can also produce aggregate shader file. that is, file that contain all
+shader format. You only have to include aggregateshader.h to parse those file.
+
 This was mainly done to be used with vin-engine 2 : https://github.com/HITOA/vin-engine 
 
 CLI options : 
