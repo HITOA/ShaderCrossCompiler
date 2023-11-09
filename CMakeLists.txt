@@ -7,8 +7,7 @@ add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/glslang)
 add_subdirectory(3rdparty/SPIRV-Cross)
 
-add_library(ShaderCrossCompilerLib library/tokenizer.h
-        library/tokenizer.cpp
+add_library(ShaderCrossCompilerLib
         library/shadercrosscompiler.h
         library/shadercrosscompiler.cpp
         library/aggregateshader.h)
