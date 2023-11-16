@@ -2,12 +2,15 @@
 #define SHADERCROSSCOMPILER_AGGREGATESHADER_H
 
 #include <stddef.h>
-#include <vector>
+#include <string.h>
 
 #ifdef SHADERCC_IMPL_AGGREGATE_WRITE
 #include <fstream>
+#include <vector>
 #include <shadercrosscompiler.h>
 #endif
+
+#define AGGREGATE_SHADER_FILE_VERSION 1000
 
 namespace ShaderCC {
 
@@ -17,6 +20,7 @@ namespace ShaderCC {
     };
 
     struct AggregateShaderFileHeader {
+        uint32_t version{ AGGREGATE_SHADER_FILE_VERSION };
         AggregateShaderFileEntry glsl{};
         AggregateShaderFileEntry spirv{};
         AggregateShaderFileEntry hlsl{};
@@ -50,54 +54,58 @@ namespace ShaderCC {
     }
 #endif
 
-    inline bool ReadAggregateShaderFileHeader(std::vector<char>& data, AggregateShaderFileHeader& header) {
-        if (data.size() < sizeof(AggregateShaderFileHeader))
+    inline bool ReadAggregateShaderFileHeader(char* data, size_t size, AggregateShaderFileHeader& header) {
+        if (size < sizeof(AggregateShaderFileHeader))
             return false;
-        memcpy(&header, data.data(), sizeof(AggregateShaderFileHeader));
+        memcpy(&header, data, sizeof(AggregateShaderFileHeader));
         return true;
     }
 
-    inline bool GetOpenGLShader(std::vector<char>& data, std::vector<char>& out) {
+    inline bool GetOpenGLShader(char* data, size_t size, char* out, size_t outsize) {
         AggregateShaderFileHeader header{};
-        if (!ReadAggregateShaderFileHeader(data, header))
+        if (!ReadAggregateShaderFileHeader(data, size, header))
             return false;
-        if (data.size() < header.msl.size + header.msl.position)
+        if (size < header.msl.size + header.msl.position)
             return false;
-        out.resize(header.glsl.size);
-        memcpy(out.data(), &data[header.glsl.position], header.glsl.size);
+        if (outsize < header.glsl.size)
+            return false;
+        memcpy(out, data + header.glsl.position, header.glsl.size);
         return true;
     }
 
-    inline bool GetVulkanShader(std::vector<char>& data, std::vector<char>& out) {
+    inline bool GetVulkanShader(char* data, size_t size, char* out, size_t outsize) {
         AggregateShaderFileHeader header{};
-        if (!ReadAggregateShaderFileHeader(data, header))
+        if (!ReadAggregateShaderFileHeader(data, size, header))
             return false;
-        if (data.size() < header.msl.size + header.msl.position)
+        if (size < header.msl.size + header.msl.position)
             return false;
-        out.resize(header.spirv.size);
-        memcpy(out.data(), &data[header.spirv.position], header.spirv.size);
+        if (outsize < header.spirv.size)
+            return false;
+        memcpy(out, data + header.spirv.position, header.spirv.size);
         return true;
     }
 
-    inline bool GetDirectXShader(std::vector<char>& data, std::vector<char>& out) {
+    inline bool GetDirectXShader(char* data, size_t size, char* out, size_t outsize) {
         AggregateShaderFileHeader header{};
-        if (!ReadAggregateShaderFileHeader(data, header))
+        if (!ReadAggregateShaderFileHeader(data, size, header))
             return false;
-        if (data.size() < header.msl.size + header.msl.position)
+        if (size < header.msl.size + header.msl.position)
             return false;
-        out.resize(header.hlsl.size);
-        memcpy(out.data(), &data[header.hlsl.position], header.hlsl.size);
+        if (outsize < header.hlsl.size)
+            return false;
+        memcpy(out, data + header.hlsl.position, header.hlsl.size);
         return true;
     }
 
-    inline bool GetMetalShader(std::vector<char>& data, std::vector<char>& out) {
+    inline bool GetMetalShader(char* data, size_t size, char* out, size_t outsize) {
         AggregateShaderFileHeader header{};
-        if (!ReadAggregateShaderFileHeader(data, header))
+        if (!ReadAggregateShaderFileHeader(data, size, header))
             return false;
-        if (data.size() < header.msl.size + header.msl.position)
+        if (size < header.msl.size + header.msl.position)
             return false;
-        out.resize(header.msl.size);
-        memcpy(out.data(), &data[header.msl.position], header.msl.size);
+        if (outsize < header.msl.size)
+            return false;
+        memcpy(out, data + header.msl.position, header.msl.size);
         return true;
     }
 }

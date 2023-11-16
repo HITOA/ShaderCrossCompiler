@@ -6,6 +6,7 @@
 
 #define SHADERCC_IMPL_AGGREGATE_WRITE
 #include <aggregateshader.h>
+#include <shaderinfo.h>
 
 int main(int argc, char** argv) {
     cxxopts::Options options{"ShaderCrossCompiler", "GLSL Shader Cross Compiler"};
@@ -13,6 +14,8 @@ int main(int argc, char** argv) {
             ("h,help", "Print usage.")
             ("i,input", "Input shader path", cxxopts::value<std::string>())
             ("o,output", "Output shader directory", cxxopts::value<std::string>())
+            ("resource", "Config file used for default resource limit in glslang (Not implemented yet)")
+            ("remap", "Config file used for attribute remapping in HLSL shader (Not implemented yet)")
             ("fragment", "Compile input as a fragment shader")
             ("vertex", "Compile input as a vertex shader")
             ("geometry", "Compile input as a geometry shader")
@@ -25,7 +28,8 @@ int main(int argc, char** argv) {
             ("hlsl", "Only output directx shader")
             ("msl", "Only output metal shader")
             ("all", "Output all shader format (shortcut)")
-            ("aggregate", "Output all shader format in one file");
+            ("aggregate", "Output all shader format in one file")
+            ("info", "Write reflection shader info in a .json");
 
     cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -146,6 +150,15 @@ int main(int argc, char** argv) {
         std::filesystem::path aggregateFilePath{ shaderOutputPath / fileName.replace_extension(".shader") };
         std::ofstream outputFile{ aggregateFilePath, std::ios_base::binary };
         ShaderCC::WriteAggregateShader(outputFile, shader);
+        outputFile.close();
+    }
+
+    if (result.count("info")) {
+        std::filesystem::path aggregateFilePath{ shaderOutputPath / fileName.replace_extension(".info.json") };
+        std::ofstream outputFile{ aggregateFilePath, std::ios_base::binary };
+
+        outputFile << ShaderCC::SerializeShaderInfo(shader).dump(4);
+
         outputFile.close();
     }
 }
