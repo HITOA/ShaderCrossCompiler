@@ -9,14 +9,22 @@ shader format. You only have to include aggregateshader.h to parse those file.
 
 This was mainly done to be used with vin-engine 2 : https://github.com/HITOA/vin-engine 
 
+nlohmann::json and cxxopts are also used.
+
 CLI options : 
 
 ```
-ShaderCrossCompiler [OPTION...]
+GLSL Shader Cross Compiler
+Usage:
+  ShaderCrossCompiler [OPTION...]
 
   -h, --help        Print usage.
   -i, --input arg   Input shader path
   -o, --output arg  Output shader directory
+      --resource    Config file used for default resource limit in glslang 
+                    (Not implemented yet)
+      --remap       Config file used for attribute remapping in HLSL shader 
+                    (Not implemented yet)
       --fragment    Compile input as a fragment shader
       --vertex      Compile input as a vertex shader
       --geometry    Compile input as a geometry shader
@@ -30,4 +38,6 @@ ShaderCrossCompiler [OPTION...]
       --msl         Only output metal shader
       --all         Output all shader format (shortcut)
       --aggregate   Output all shader format in one file
+      --info        Write reflection shader info in a .json
+
 ```
