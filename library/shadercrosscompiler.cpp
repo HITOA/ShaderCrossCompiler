@@ -61,6 +61,41 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
         return false;
     }
 
+    program.buildReflection();
+
+    {
+        int count = program.getNumPipeInputs();
+        for (int i = 0; i < count; ++i) {
+            auto& input = program.getPipeInput(i);
+
+            AttributeInfo attributeInfo{};
+            attributeInfo.name = input.name;
+            attributeInfo.type = input.glDefineType;
+            attributeInfo.location = input.getType()->getQualifier().layoutLocation;
+
+            spirvReflectionData.attributes.push_back(attributeInfo);
+        }
+    }
+
+    {
+        int count = program.getNumLiveUniformVariables();
+        for (int i = 0; i < count; ++i) {
+            auto& uniform = program.getUniform(i);
+
+            UniformInfo uniformInfo{};
+            uniformInfo.name = uniform.name;
+            uniformInfo.binding = uniform.getBinding();
+            uniformInfo.type = uniform.glDefineType;
+            uniformInfo.offset = uniform.offset;
+            uniformInfo.arraySize = uniform.size;
+            uniformInfo.index = uniform.index;
+            uniformInfo.texFormat = uniform.getType()->getSampler().type;
+            uniformInfo.texDim = uniform.getType()->getSampler().dim;
+
+            spirvReflectionData.uniforms.push_back(uniformInfo);
+        }
+    }
+
     std::vector<unsigned int> spirv{};
     glslang::SpvOptions spvOptions{};
     spvOptions.disableOptimizer = !optimize;
@@ -74,23 +109,6 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
     memcpy(spirvSource.data(), spirv.data(), spirvSource.size());
 
     glslang::FinalizeProcess();
-
-    {
-        spirv_cross::Compiler ref{spirv};
-        auto resources = ref.get_shader_resources();
-
-        for (auto &input: resources.stage_inputs) {
-            AttributeInfo attributeInfo{};
-
-            attributeInfo.name = input.name;
-            attributeInfo.type.baseType = (int) ref.get_type(input.type_id).basetype;
-            attributeInfo.type.row = (int) ref.get_type(input.type_id).vecsize;
-            attributeInfo.type.col = (int) ref.get_type(input.type_id).columns;
-            attributeInfo.location = (int) ref.get_decoration(input.id, spv::DecorationLocation);
-
-            spirvReflectionData.attributes.push_back(attributeInfo);
-        }
-    }
 
     if(!CompileGLSL(spirv)) {
         std::cout << "Couldn't compile glsl." << std::endl;
@@ -124,20 +142,8 @@ const std::vector<char>& ShaderCC::Shader::GetMslSource() {
     return mslSource;
 }
 
-const ShaderCC::ReflectionData& ShaderCC::Shader::GetGlslReflectionData() {
-    return glslReflectionData;
-}
-
 const ShaderCC::ReflectionData& ShaderCC::Shader::GetSpirvReflectionData() {
     return spirvReflectionData;
-}
-
-const ShaderCC::ReflectionData& ShaderCC::Shader::GetMslReflectionData() {
-    return mslReflectionData;
-}
-
-const ShaderCC::ReflectionData& ShaderCC::Shader::GetHlslReflectionData() {
-    return hlslReflectionData;
 }
 
 void ShaderCC::Shader::SetOptimizer() {
@@ -149,20 +155,6 @@ bool ShaderCC::Shader::CompileGLSL(std::vector<unsigned int> &spirv) {
 
     spirv_cross::CompilerGLSL::Options options{};
     options.version = glslVersion;
-
-    auto resources = glsl.get_shader_resources();
-
-    for (auto& input : resources.stage_inputs) {
-        AttributeInfo attributeInfo{};
-
-        attributeInfo.name = input.name;
-        attributeInfo.type.baseType = (int)glsl.get_type(input.type_id).basetype;
-        attributeInfo.type.row = (int)glsl.get_type(input.type_id).vecsize;
-        attributeInfo.type.col = (int)glsl.get_type(input.type_id).columns;
-        attributeInfo.location = (int)glsl.get_decoration(input.id, spv::DecorationLocation);
-
-        glslReflectionData.attributes.push_back(attributeInfo);
-    }
 
     glsl.set_common_options(options);
     std::string source = glsl.compile();
@@ -177,20 +169,6 @@ bool ShaderCC::Shader::CompileHLSL(std::vector<unsigned int> &spirv) {
     spirv_cross::CompilerHLSL::Options options{};
     options.shader_model = glslVersion >= 400 ? 40 : 30;
 
-    auto resources = hlsl.get_shader_resources();
-
-    for (auto& input : resources.stage_inputs) {
-        AttributeInfo attributeInfo{};
-
-        attributeInfo.name = input.name;
-        attributeInfo.type.baseType = (int)hlsl.get_type(input.type_id).basetype;
-        attributeInfo.type.row = (int)hlsl.get_type(input.type_id).vecsize;
-        attributeInfo.type.col = (int)hlsl.get_type(input.type_id).columns;
-        attributeInfo.location = (int)hlsl.get_decoration(input.id, spv::DecorationLocation);
-
-        hlslReflectionData.attributes.push_back(attributeInfo);
-    }
-
     hlsl.set_hlsl_options(options);
     std::string source = hlsl.compile();
     hlslSource.resize(source.size());
@@ -200,20 +178,6 @@ bool ShaderCC::Shader::CompileHLSL(std::vector<unsigned int> &spirv) {
 
 bool ShaderCC::Shader::CompileMSL(std::vector<unsigned int> &spirv) {
     spirv_cross::CompilerMSL msl{ spirv };
-
-    auto resources = msl.get_shader_resources();
-
-    for (auto& input : resources.stage_inputs) {
-        AttributeInfo attributeInfo{};
-
-        attributeInfo.name = input.name;
-        attributeInfo.type.baseType = (int)msl.get_type(input.type_id).basetype;
-        attributeInfo.type.row = (int)msl.get_type(input.type_id).vecsize;
-        attributeInfo.type.col = (int)msl.get_type(input.type_id).columns;
-        attributeInfo.location = (int)msl.get_decoration(input.id, spv::DecorationLocation);
-
-        mslReflectionData.attributes.push_back(attributeInfo);
-    }
 
     std::string source = msl.compile();
     mslSource.resize(source.size());

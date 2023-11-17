@@ -10,8 +10,6 @@
 #include <shadercrosscompiler.h>
 #endif
 
-#define AGGREGATE_SHADER_FILE_VERSION 1000
-
 namespace ShaderCC {
 
     struct AggregateShaderFileEntry {
@@ -20,7 +18,6 @@ namespace ShaderCC {
     };
 
     struct AggregateShaderFileHeader {
-        uint32_t version{ AGGREGATE_SHADER_FILE_VERSION };
         AggregateShaderFileEntry glsl{};
         AggregateShaderFileEntry spirv{};
         AggregateShaderFileEntry hlsl{};

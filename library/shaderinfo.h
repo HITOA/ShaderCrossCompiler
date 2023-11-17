@@ -9,14 +9,25 @@ namespace ShaderCC {
     inline nlohmann::json SerializeReflectionData(const ReflectionData& reflectionData) {
         nlohmann::json data{};
 
-        for (auto attribute : reflectionData.attributes) {
+        for (const auto& attribute : reflectionData.attributes) {
             nlohmann::json curr{};
             curr["name"] = attribute.name;
             curr["location"] = attribute.location;
-            curr["type"]["baseType"] = attribute.type.baseType;
-            curr["type"]["row"] = attribute.type.row;
-            curr["type"]["col"] = attribute.type.col;
+            curr["type"]= attribute.type;
             data["attributes"] += curr;
+        }
+
+        for (const auto& uniform : reflectionData.uniforms) {
+            nlohmann::json curr{};
+            curr["name"] = uniform.name;
+            curr["binding"] = uniform.binding;
+            curr["type"]= uniform.type;
+            curr["offset"]= uniform.offset;
+            curr["arraySize"]= uniform.arraySize;
+            curr["index"]= uniform.index;
+            curr["texFormat"]= uniform.texFormat;
+            curr["texDim"]= uniform.texDim;
+            data["uniforms"] += curr;
         }
 
         return data;
@@ -25,10 +36,7 @@ namespace ShaderCC {
     inline nlohmann::json SerializeShaderInfo(Shader& shader) {
         nlohmann::json shaderInfo{};
 
-        shaderInfo["glsl"] = SerializeReflectionData(shader.GetGlslReflectionData());
         shaderInfo["spirv"] = SerializeReflectionData(shader.GetSpirvReflectionData());
-        shaderInfo["hlsl"] = SerializeReflectionData(shader.GetHlslReflectionData());
-        shaderInfo["msl"] = SerializeReflectionData(shader.GetMslReflectionData());
 
         return shaderInfo;
     }

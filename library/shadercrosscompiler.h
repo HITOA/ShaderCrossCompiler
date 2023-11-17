@@ -16,16 +16,10 @@ namespace ShaderCC {
         Compute,
     };
 
-    struct Type {
-        int baseType{};
-        int row{};
-        int col{};
-    };
-
     struct UniformInfo {
         std::string name{};
         int binding{};
-        Type type{};
+        int type{};
         int offset{};
         int arraySize{};
         int index{};
@@ -41,7 +35,7 @@ namespace ShaderCC {
     struct AttributeInfo {
         std::string name{};
         int location{};
-        Type type{};
+        int type{};
     };
 
     struct ReflectionData {
@@ -62,10 +56,7 @@ namespace ShaderCC {
         const std::vector<char>& GetMslSource();
         const std::vector<char>& GetHlslSource();
 
-        const ReflectionData& GetGlslReflectionData();
         const ReflectionData& GetSpirvReflectionData();
-        const ReflectionData& GetMslReflectionData();
-        const ReflectionData& GetHlslReflectionData();
 
         void SetOptimizer();
     private:
@@ -83,10 +74,7 @@ namespace ShaderCC {
         std::vector<char> mslSource{};
         std::vector<char> hlslSource{};
 
-        ReflectionData glslReflectionData{};
         ReflectionData spirvReflectionData{};
-        ReflectionData mslReflectionData{};
-        ReflectionData hlslReflectionData{};
     };
 }
 
