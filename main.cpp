@@ -29,7 +29,9 @@ int main(int argc, char** argv) {
             ("msl", "Only output metal shader")
             ("all", "Output all shader format (shortcut)")
             ("aggregate", "Output all shader format in one file")
-            ("info", "Write reflection shader info in a .json");
+            ("info", "Write reflection shader info in a .json")
+            ("sysinclude","Add system include directory (multiple separated by coma)", cxxopts::value<std::vector<std::string>>())
+            ("locinclude","Add local include directory (multiple separated by coma)", cxxopts::value<std::vector<std::string>>());
 
     cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -100,12 +102,26 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    ShaderCC::ShaderIncluder includer{};
+
+    if (result.count("sysinclude")) {
+        std::vector<std::string> systemIncludeDir = result["sysinclude"].as<std::vector<std::string>>();
+        for (const auto& dir : systemIncludeDir)
+            includer.AddSystemIncludeDirectory(dir);
+    }
+
+    if (result.count("locinclude")) {
+        std::vector<std::string> localIncludeDir = result["locinclude"].as<std::vector<std::string>>();
+        for (const auto& dir : localIncludeDir)
+            includer.AddLocalIncludeDirectory(dir);
+    }
+
     ShaderCC::Shader shader{ shaderType };
 
     if (result.count("optimize"))
         shader.SetOptimizer();
 
-    if(!shader.Compile(data)) {
+    if(!shader.Compile(data, includer)) {
         std::cout << "Failed Compilation." << std::endl;
         return -1;
     }

@@ -6,6 +6,88 @@
 #include <spirv_glsl.hpp>
 #include <spirv_hlsl.hpp>
 #include <spirv_msl.hpp>
+#include <filesystem>
+#include <fstream>
+
+glslang::TShader::Includer::IncludeResult* ShaderCC::ShaderIncluder::includeSystem(
+        const char* headerName, const char* includerName, size_t includeDepth) {
+
+    if (includeDepth > MAX_INCLUDE_DEPTH)
+        return nullptr;
+
+    for (auto& includeDir : systemIncludeDir) {
+        std::filesystem::path filename{ includeDir };
+        filename /= headerName;
+        if (std::filesystem::exists(filename)) {
+            std::ifstream inputFile{ filename, std::ios_base::binary };
+            if (!inputFile.is_open()) {
+                std::cout << "Couldn't open included file : " << headerName << std::endl;
+                return nullptr;
+            }
+
+            inputFile.ignore( std::numeric_limits<std::streamsize>::max() );
+            size_t size = inputFile.gcount();
+            inputFile.clear();
+            inputFile.seekg(0, std::ios_base::beg);
+
+            char* data = new char[size];
+            inputFile.read(data, size);
+            inputFile.close();
+
+            return new IncludeResult{headerName, data, size, nullptr};
+        }
+    }
+
+    return nullptr;
+}
+
+glslang::TShader::Includer::IncludeResult* ShaderCC::ShaderIncluder::includeLocal(
+        const char* headerName, const char* includerName, size_t includeDepth) {
+
+    if (includeDepth > MAX_INCLUDE_DEPTH)
+        return nullptr;
+
+    for (auto& includeDir : localIncludeDir) {
+        std::filesystem::path filename{ includeDir };
+        filename /= headerName;
+        if (std::filesystem::exists(filename)) {
+            std::ifstream inputFile{ filename, std::ios_base::binary };
+            if (!inputFile.is_open()) {
+                std::cout << "Couldn't open included file : " << headerName << std::endl;
+                return nullptr;
+            }
+
+            inputFile.ignore( std::numeric_limits<std::streamsize>::max() );
+            size_t size = inputFile.gcount();
+            inputFile.clear();
+            inputFile.seekg(0, std::ios_base::beg);
+
+            char* data = new char[size];
+            inputFile.read(data, size);
+            inputFile.close();
+
+            return new IncludeResult{headerName, data, size, nullptr};
+        }
+    }
+
+    return nullptr;
+}
+
+void ShaderCC::ShaderIncluder::releaseInclude(glslang::TShader::Includer::IncludeResult* includeResult) {
+    if (includeResult == nullptr)
+        return;
+
+    delete[] includeResult->headerData;
+    delete includeResult;
+}
+
+void ShaderCC::ShaderIncluder::AddSystemIncludeDirectory(const std::string &dir) {
+    systemIncludeDir.push_back(dir);
+}
+
+void ShaderCC::ShaderIncluder::AddLocalIncludeDirectory(const std::string &dir) {
+    localIncludeDir.push_back(dir);
+}
 
 EShLanguage GetGlslangStageFromShaderType(ShaderCC::ShaderType type) {
     switch (type) {
@@ -28,7 +110,7 @@ EShLanguage GetGlslangStageFromShaderType(ShaderCC::ShaderType type) {
 
 ShaderCC::Shader::Shader(ShaderCC::ShaderType type) : type{ type } {}
 
-bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
+bool ShaderCC::Shader::Compile(const std::vector<char>& glsl, ShaderIncluder& includer) {
     glslang::InitializeProcess();
     const char* shSource = glsl.data();
 
@@ -48,7 +130,7 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
 
     shader.setStrings(&shSource, 1);
 
-    if (!shader.parse(GetDefaultResources(), 100, false, EShMessages::EShMsgDefault)) {
+    if (!shader.parse(GetDefaultResources(), 100, ENoProfile, false, false, EShMessages::EShMsgDefault, includer)) {
         std::cout << "Glslang failed to parse shader\n" << shader.getInfoLog() << "\n" << shader.getInfoDebugLog() << std::endl;
         return false;
     }
@@ -75,6 +157,7 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
 
             spirvReflectionData.attributes.push_back(attributeInfo);
         }
+
     }
 
     {
@@ -124,6 +207,11 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl) {
     }
 
     return true;
+}
+
+bool ShaderCC::Shader::Compile(const std::vector<char> &glsl) {
+    ShaderIncluder includer{};
+    Compile(glsl, includer);
 }
 
 const std::vector<char>& ShaderCC::Shader::GetGlslSource() {

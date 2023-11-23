@@ -4,6 +4,9 @@
 #include <stddef.h>
 #include <vector>
 #include <string>
+#include <glslang/Public/ShaderLang.h>
+
+#define MAX_INCLUDE_DEPTH 256
 
 namespace ShaderCC {
     enum class ShaderType {
@@ -44,11 +47,34 @@ namespace ShaderCC {
         std::vector<AttributeInfo> attributes{};
     };
 
+    class ShaderIncluder : public glslang::TShader::Includer {
+    public:
+        // For the "system" or <>-style includes; search the "system" paths.
+        IncludeResult* includeSystem(const char* /*headerName*/, const char* /*includerName*/, size_t /*inclusionDepth*/) final;
+
+        // For the "local"-only aspect of a "" include. Should not search in the
+        // "system" paths, because on returning a failure, the parser will
+        // call includeSystem() to look in the "system" locations.
+        IncludeResult* includeLocal(const char* /*headerName*/, const char* /*includerName*/, size_t /*inclusionDepth*/) final;
+
+        // Signals that the parser will no longer use the contents of the
+        // specified IncludeResult.
+        void releaseInclude(IncludeResult*) final;
+
+        void AddSystemIncludeDirectory(const std::string& dir);
+        void AddLocalIncludeDirectory(const std::string& dir);
+
+    private:
+        std::vector<std::string> systemIncludeDir{};
+        std::vector<std::string> localIncludeDir{};
+    };
+
     class Shader {
     public:
         Shader() = delete;
         explicit Shader(ShaderType type);
 
+        bool Compile(const std::vector<char>& glsl, ShaderIncluder& includer);
         bool Compile(const std::vector<char>& glsl);
 
         const std::vector<char>& GetGlslSource();
