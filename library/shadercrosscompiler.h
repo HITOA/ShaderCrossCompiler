@@ -82,6 +82,7 @@ namespace ShaderCC {
         const std::vector<char>& GetMslSource();
         const std::vector<char>& GetHlslSource();
 
+        const ReflectionData& GetGlslReflectionData();
         const ReflectionData& GetSpirvReflectionData();
 
         void SetOptimizer();
@@ -100,6 +101,7 @@ namespace ShaderCC {
         std::vector<char> mslSource{};
         std::vector<char> hlslSource{};
 
+        ReflectionData glslReflectionData{};
         ReflectionData spirvReflectionData{};
     };
 }

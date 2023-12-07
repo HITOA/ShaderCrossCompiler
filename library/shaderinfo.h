@@ -36,6 +36,7 @@ namespace ShaderCC {
     inline nlohmann::json SerializeShaderInfo(Shader& shader) {
         nlohmann::json shaderInfo{};
 
+        shaderInfo["glsl"] = SerializeReflectionData(shader.GetGlslReflectionData());
         shaderInfo["spirv"] = SerializeReflectionData(shader.GetSpirvReflectionData());
 
         return shaderInfo;

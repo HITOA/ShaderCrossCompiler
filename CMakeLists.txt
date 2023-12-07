@@ -12,7 +12,8 @@ add_library(ShaderCrossCompilerLib
         library/shadercrosscompiler.cpp
         library/aggregateshader.h
         library/json.h
-        library/shaderinfo.h)
+        library/shaderinfo.h
+)
 target_link_libraries(ShaderCrossCompilerLib glslang glslang-default-resource-limits SPIRV spirv-cross-glsl spirv-cross-hlsl spirv-cross-msl)
 target_include_directories(ShaderCrossCompilerLib PUBLIC library)
 

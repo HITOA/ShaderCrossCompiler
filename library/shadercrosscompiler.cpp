@@ -8,6 +8,7 @@
 #include <spirv_msl.hpp>
 #include <filesystem>
 #include <fstream>
+#include <regex>
 
 glslang::TShader::Includer::IncludeResult* ShaderCC::ShaderIncluder::includeSystem(
         const char* headerName, const char* includerName, size_t includeDepth) {
@@ -230,6 +231,10 @@ const std::vector<char>& ShaderCC::Shader::GetMslSource() {
     return mslSource;
 }
 
+const ShaderCC::ReflectionData &ShaderCC::Shader::GetGlslReflectionData() {
+    return glslReflectionData;
+}
+
 const ShaderCC::ReflectionData& ShaderCC::Shader::GetSpirvReflectionData() {
     return spirvReflectionData;
 }
@@ -243,9 +248,34 @@ bool ShaderCC::Shader::CompileGLSL(std::vector<unsigned int> &spirv) {
 
     spirv_cross::CompilerGLSL::Options options{};
     options.version = glslVersion;
+    options.emit_uniform_buffer_as_plain_uniforms = true;
 
     glsl.set_common_options(options);
     std::string source = glsl.compile();
+
+    glslReflectionData.attributes = spirvReflectionData.attributes;
+    glslReflectionData.uniforms = spirvReflectionData.uniforms;
+
+    for (UniformInfo& uniformInfo : glslReflectionData.uniforms)
+        uniformInfo.offset = 0;
+
+    spirv_cross::ShaderResources resources = glsl.get_shader_resources();
+
+    for (spirv_cross::Resource& ubo : resources.uniform_buffers) {
+        std::smatch regMatch{};
+
+        std::regex structReg{"struct\\s+" + glsl.get_remapped_declared_block_name(ubo.id) + R"(\s*\{\n*([\w\s\[\];]+)\n+\};)"};
+        std::regex uniformReg{R"([^\n\w]*(\w+\s+[\w\[\]]+\s*;))"};
+        std::regex structNameReg{R"(\s*uniform\s*)" + glsl.get_remapped_declared_block_name(ubo.id) + "\\s\\w+;"};
+        std::regex uniformNameReg{"_" + std::to_string(ubo.id) + R"(\.(\w+))"};
+        std::regex_search(source, regMatch, structReg);
+        source = std::regex_replace(source, structReg, 
+                                    std::regex_replace(
+                                            std::regex_replace(regMatch.str(), structReg, "$1"), uniformReg, "uniform $1"));
+        source = std::regex_replace(source, structNameReg, "");
+        source = std::regex_replace(source, uniformNameReg, "$1");
+    }
+
     glslSource.resize(source.size());
     memcpy(glslSource.data(), source.data(), glslSource.size());
     return true;
