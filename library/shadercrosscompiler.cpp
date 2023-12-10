@@ -123,11 +123,11 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl, ShaderIncluder& in
     shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
     shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
 
-    /*shader.setShiftBinding(glslang::EResUbo, (stage == EShLanguage::EShLangFragment ? 1 : 0));
+    shader.setShiftBinding(glslang::EResUbo, (stage == EShLanguage::EShLangFragment ? 1 : 0));
     shader.setShiftBinding(glslang::EResTexture, 2);
     shader.setShiftBinding(glslang::EResSampler, 2 + 16);
     shader.setShiftBinding(glslang::EResSsbo, 2);
-    shader.setShiftBinding(glslang::EResImage, 2);*/
+    shader.setShiftBinding(glslang::EResImage, 2);
 
     shader.setStrings(&shSource, 1);
 
@@ -193,6 +193,13 @@ bool ShaderCC::Shader::Compile(const std::vector<char>& glsl, ShaderIncluder& in
     memcpy(spirvSource.data(), spirv.data(), spirvSource.size());
 
     glslang::FinalizeProcess();
+
+    spirv_cross::Compiler spirvReflection{ spirv };
+    spirv_cross::ShaderResources resources = spirvReflection.get_shader_resources();
+
+    for (auto& ssbo : resources.storage_buffers) {
+        std::cout << "SSBO : " << ssbo.name << std::endl;
+    }
 
     if(!CompileGLSL(spirv)) {
         std::cout << "Couldn't compile glsl." << std::endl;
